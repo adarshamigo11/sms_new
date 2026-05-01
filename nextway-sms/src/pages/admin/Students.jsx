@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { PageHeader, PrimaryBtn, SecondaryBtn, SearchBar, Badge, Modal, FormField, StatCard, GlassCard, SectionTitle, DangerBtn } from '../../components/ui';
-import { STUDENTS } from '../../data/mockData';
+import { studentsApi } from '../../services/api';
 
 const STATUS_MAP = { active: 'green', inactive: 'red' };
 const FEE_MAP    = { paid: 'green', pending: 'yellow', overdue: 'red' };
@@ -8,6 +8,8 @@ const FEE_MAP    = { paid: 'green', pending: 'yellow', overdue: 'red' };
 const GENDER_GRAD = { Male: 'from-blue-500 to-cyan-500', Female: 'from-pink-500 to-rose-500' };
 
 export default function Students() {
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search,       setSearch]      = useState('');
   const [filterClass,  setFilterClass] = useState('');
   const [filterStatus, setFilterStatus]= useState('');
@@ -19,18 +21,51 @@ export default function Students() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
+  // Fetch students from API
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      const response = await studentsApi.list();
+      setStudents(response.students || []);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      showToast('❌ Failed to load students');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load students on mount
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
   const filtered = useMemo(() =>
-    STUDENTS.filter(s =>
-      (s.name.toLowerCase().includes(search.toLowerCase()) ||
-       s.admissionNo.toLowerCase().includes(search.toLowerCase())) &&
+    students.filter(s =>
+      (s.name?.toLowerCase().includes(search.toLowerCase()) ||
+       s.admissionNo?.toLowerCase().includes(search.toLowerCase())) &&
       (!filterClass  || s.class === filterClass) &&
       (!filterStatus || s.status === filterStatus)
-    ), [search, filterClass, filterStatus]);
+    ), [students, search, filterClass, filterStatus]);
 
-  const handleAdd = () => {
-    showToast('✅ Student added successfully!');
-    setAddOpen(false);
-    setForm({ name:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'' });
+  const handleAdd = async () => {
+    try {
+      await studentsApi.create({
+        name: form.name,
+        class: form.class,
+        section: form.section,
+        gender: form.gender,
+        dob: form.dob,
+        parentPhone: form.phone,
+        bloodGroup: form.blood
+      });
+      showToast('✅ Student added successfully!');
+      setAddOpen(false);
+      setForm({ name:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'' });
+      fetchStudents(); // Refresh list
+    } catch (error) {
+      showToast('❌ ' + (error.message || 'Failed to add student'));
+    }
   };
 
   return (
@@ -43,7 +78,7 @@ export default function Students() {
         </div>
       )}
 
-      <PageHeader title="Students" subtitle={`${STUDENTS.length} students enrolled · ${STUDENTS.filter(s=>s.status==='active').length} active`}
+      <PageHeader title="Students" subtitle={`${students.length} students enrolled · ${students.filter(s=>s.status==='active').length} active`}
         actions={<>
           <SecondaryBtn onClick={() => showToast('📥 CSV template downloaded!')}>⬆️ Import CSV</SecondaryBtn>
           <SecondaryBtn onClick={() => showToast('📊 Export started!')}>⬇️ Export</SecondaryBtn>
@@ -53,10 +88,10 @@ export default function Students() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Students"  value={STUDENTS.length}                                     icon="🎓" gradient="from-blue-500 to-cyan-500"    delay={0}  />
-        <StatCard title="Active"          value={STUDENTS.filter(s=>s.status==='active').length}       icon="✅" gradient="from-emerald-500 to-teal-500" delay={0.1}/>
-        <StatCard title="Fee Defaulters"  value={STUDENTS.filter(s=>s.fees==='overdue').length}        icon="🚨" gradient="from-red-500 to-rose-500"     delay={0.2}/>
-        <StatCard title="Avg Attendance"  value={`${Math.round(STUDENTS.reduce((a,s)=>a+s.attendance,0)/STUDENTS.length)}%`} icon="📋" gradient="from-purple-500 to-violet-500" delay={0.3}/>
+        <StatCard title="Total Students"  value={students.length}                                     icon="🎓" gradient="from-blue-500 to-cyan-500"    delay={0}  />
+        <StatCard title="Active"          value={students.filter(s=>s.status==='active').length}       icon="✅" gradient="from-emerald-500 to-teal-500" delay={0.1}/>
+        <StatCard title="Fee Defaulters"  value={students.filter(s=>s.fees==='overdue').length}        icon="🚨" gradient="from-red-500 to-rose-500"     delay={0.2}/>
+        <StatCard title="Avg Attendance"  value={`${students.length > 0 ? Math.round(students.reduce((a,s)=>a+(s.attendance||0),0)/students.length) : 0}%`} icon="📋" gradient="from-purple-500 to-violet-500" delay={0.3}/>
       </div>
 
       {/* Filters */}
@@ -84,6 +119,12 @@ export default function Students() {
 
       {/* Table */}
       <div className="glass-static overflow-hidden">
+        {loading ? (
+          <div className="text-center py-16 text-slate-400">
+            <p className="text-4xl mb-2 animate-pulse">⏳</p>
+            <p className="text-white font-semibold">Loading students...</p>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
@@ -142,6 +183,7 @@ export default function Students() {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* ── ADD STUDENT MODAL ── */}
