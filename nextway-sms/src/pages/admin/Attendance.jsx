@@ -1,25 +1,74 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader, GlassCard, SectionTitle, StatCard } from '../../components/ui';
-import { ATTENDANCE_DATA, STUDENTS, MONTHLY_ATTENDANCE } from '../../data/mockData';
+import { studentsApi, attendanceApi } from '../../services/api';
+import { ATTENDANCE_DATA, MONTHLY_ATTENDANCE } from '../../data/mockData';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-
-const TODAY_STUDENTS = STUDENTS.map(s => ({
-  ...s, todayStatus: Math.random() > 0.15 ? 'present' : Math.random() > 0.5 ? 'absent' : 'late'
-}));
 
 const STATUS_COLOR = { present: 'green', absent: 'red', late: 'yellow' };
 
 export default function Attendance() {
-  const [selectedClass, setSelectedClass] = useState('Class 8A');
+  const [students, setStudents] = useState([]);
+  const [attendance, setAttendance] = useState({});
+  const [selectedClass, setSelectedClass] = useState('Class 8');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [view, setView] = useState('mark');
+  const [toast, setToast] = useState('');
 
-  const classStudents = TODAY_STUDENTS.slice(0, 8);
-  const presentCount = classStudents.filter(s => s.todayStatus === 'present').length;
-  const absentCount = classStudents.filter(s => s.todayStatus === 'absent').length;
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
+
+  // Fetch students for selected class
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await studentsApi.list({ class: selectedClass });
+        const studentsList = response.students || [];
+        setStudents(studentsList);
+        // Initialize attendance status
+        const initialAttendance = {};
+        studentsList.forEach(s => {
+          initialAttendance[s._id] = 'present';
+        });
+        setAttendance(initialAttendance);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+        showToast('❌ Failed to load students');
+      }
+    };
+    fetchStudents();
+  }, [selectedClass]);
+
+  const handleStatusChange = (studentId, status) => {
+    setAttendance(prev => ({ ...prev, [studentId]: status }));
+  };
+
+  const handleSaveAttendance = async () => {
+    try {
+      const attendanceRecords = Object.entries(attendance).map(([studentId, status]) => ({
+        studentId,
+        date,
+        status
+      }));
+      await attendanceApi.mark({ date, class: selectedClass, records: attendanceRecords });
+      showToast('✅ Attendance saved successfully!');
+    } catch (error) {
+      showToast('❌ ' + (error.message || 'Failed to save attendance'));
+    }
+  };
+
+  const presentCount = Object.values(attendance).filter(s => s === 'present').length;
+  const absentCount = Object.values(attendance).filter(s => s === 'absent').length;
+  const lateCount = Object.values(attendance).filter(s => s === 'late').length;
 
   return (
     <div className="space-y-5">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-white text-sm font-medium shadow-glass animate-slide-in-up"
+          style={{background:'linear-gradient(135deg,#10b981,#059669)'}}>
+          {toast}
+        </div>
+      )}
+
       <PageHeader title="Attendance Management" subtitle="Mark and track student attendance"
         actions={
           <div className="flex gap-2">
@@ -32,7 +81,7 @@ export default function Attendance() {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Today Present" value={`${presentCount}`} change={`${Math.round(presentCount/classStudents.length*100)}%`} icon="✅" gradient="from-emerald-500 to-teal-500" />
+        <StatCard title="Today Present" value={`${presentCount}`} change={`${students.length > 0 ? Math.round(presentCount/students.length*100) : 0}%`} icon="✅" gradient="from-emerald-500 to-teal-500" />
         <StatCard title="Today Absent" value={`${absentCount}`} changeType="down" change="students" icon="❌" gradient="from-red-500 to-rose-500" />
         <StatCard title="Monthly Avg" value="92.5%" change="+1.2% vs last month" icon="📊" gradient="from-blue-500 to-cyan-500" />
         <StatCard title="On Leave" value="8" change="approved leaves" icon="🌴" gradient="from-purple-500 to-violet-500" />
@@ -54,7 +103,7 @@ export default function Attendance() {
                     {['Class 6A','Class 7A','Class 8A','Class 8B','Class 9A','Class 10A'].map(c=><option key={c}>{c}</option>)}
                   </select>
                 </div>
-                <button className="mt-4 px-4 py-2 rounded-lg text-sm text-white font-medium" style={{background:'linear-gradient(135deg,#3b82f6,#06b6d4)'}}>
+                <button className="mt-4 px-4 py-2 rounded-lg text-sm text-white font-medium" style={{background:'linear-gradient(135deg,#3b82f6,#06b6d4)'}} onClick={handleSaveAttendance}>
                   💾 Save Attendance
                 </button>
                 <div className="flex gap-2 ml-auto">
@@ -71,22 +120,23 @@ export default function Attendance() {
                 <table className="data-table">
                   <thead><tr><th>#</th><th>Student Name</th><th>Roll No</th><th>Status</th><th>Remarks</th></tr></thead>
                   <tbody>
-                    {classStudents.map((s,i)=>(
-                      <tr key={s.id}>
+                    {students.map((s,i)=>(
+                      <tr key={s._id || s.id}>
                         <td className="text-slate-500">{i+1}</td>
                         <td>
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{background:'linear-gradient(135deg,#3b82f6,#06b6d4)'}}>{s.name.charAt(0)}</div>
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{background:'linear-gradient(135deg,#3b82f6,#06b6d4)'}}>{s.name?.charAt(0)}</div>
                             <span className="text-white text-sm">{s.name}</span>
                           </div>
                         </td>
-                        <td className="text-slate-400 text-xs">0{i+1}</td>
+                        <td className="text-slate-400 text-xs">{s.admissionNo || `0${i+1}`}</td>
                         <td>
                           <div className="flex gap-1">
                             {['present','absent','late'].map(st=>(
                               <button key={st}
-                                className={`px-2 py-1 rounded-lg text-[10px] font-semibold capitalize transition-all ${s.todayStatus===st?'text-white':'text-slate-500 hover:text-slate-300'}`}
-                                style={s.todayStatus===st?{background:st==='present'?'rgba(16,185,129,0.2)':st==='absent'?'rgba(239,68,68,0.2)':'rgba(245,158,11,0.2)',border:`1px solid ${st==='present'?'#10b981':st==='absent'?'#ef4444':'#f59e0b'}`}:{}}>
+                                onClick={() => handleStatusChange(s._id, st)}
+                                className={`px-2 py-1 rounded-lg text-[10px] font-semibold capitalize transition-all ${attendance[s._id]===st?'text-white':'text-slate-500 hover:text-slate-300'}`}
+                                style={attendance[s._id]===st?{background:st==='present'?'rgba(16,185,129,0.2)':st==='absent'?'rgba(239,68,68,0.2)':'rgba(245,158,11,0.2)',border:`1px solid ${st==='present'?'#10b981':st==='absent'?'#ef4444':'#f59e0b'}`}:{}}>
                                 {st}
                               </button>
                             ))}
@@ -106,10 +156,10 @@ export default function Attendance() {
             <GlassCard noHover>
               <SectionTitle>Today's Summary</SectionTitle>
               <div className="space-y-3">
-                {[{label:'Total Students',value:classStudents.length,color:'#94a3b8'},
+                {[{label:'Total Students',value:students.length,color:'#94a3b8'},
                   {label:'Present',value:presentCount,color:'#10b981'},
                   {label:'Absent',value:absentCount,color:'#ef4444'},
-                  {label:'Late',value:1,color:'#f59e0b'},
+                  {label:'Late',value:lateCount,color:'#f59e0b'},
                   {label:'On Leave',value:1,color:'#8b5cf6'},
                 ].map(r=>(
                   <div key={r.label} className="flex justify-between items-center">
@@ -120,7 +170,7 @@ export default function Attendance() {
                 <div className="pt-2 border-t border-slate-700/40">
                   <div className="flex justify-between">
                     <span className="text-slate-400 text-sm">Percentage</span>
-                    <span className="text-emerald-400 font-bold">{Math.round(presentCount/classStudents.length*100)}%</span>
+                    <span className="text-emerald-400 font-bold">{students.length > 0 ? Math.round(presentCount/students.length*100) : 0}%</span>
                   </div>
                 </div>
               </div>

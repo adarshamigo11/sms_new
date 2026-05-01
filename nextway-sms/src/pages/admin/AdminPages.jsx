@@ -18,16 +18,54 @@ function useToast() {
 // ─── TEACHERS ────────────────────────────────────────────────────────────────
 export function Teachers() {
   const { show, Toast } = useToast();
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [viewT, setViewT] = useState(null);
-  const [form, setForm] = useState({ name:'', email:'', subject:'Mathematics', phone:'' });
+  const [form, setForm] = useState({ name:'', email:'', subject:'Mathematics', phone:'', role:'Teacher' });
+
+  const fetchTeachers = async () => {
+    try {
+      setLoading(true);
+      const response = await usersApi.list({ role: 'teacher' });
+      setTeachers(response.users || []);
+    } catch (error) {
+      console.error('Error fetching teachers:', error);
+      show('❌ Failed to load teachers');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTeachers();
+  }, []);
+
+  const handleAddTeacher = async () => {
+    try {
+      await usersApi.create({
+        name: form.name,
+        email: form.email,
+        password: 'Teacher@2026!',
+        role: 'teacher',
+        subject: form.subject,
+        phone: form.phone
+      });
+      show('✅ Teacher added successfully!');
+      setAddOpen(false);
+      setForm({ name:'', email:'', subject:'Mathematics', phone:'', role:'Teacher' });
+      fetchTeachers();
+    } catch (error) {
+      show('❌ ' + (error.message || 'Failed to add teacher'));
+    }
+  };
 
   return (
     <div className="space-y-5">
       <Toast />
-      <PageHeader title="Teachers & Staff" subtitle={`${TEACHERS.length} staff members`}
+      <PageHeader title="Teachers & Staff" subtitle={`${teachers.length} staff members`}
         actions={<>
-          <SecondaryBtn onClick={() => downloadCSV('teachers.csv', ['Name','Employee ID','Subject','Phone','Email','Status'], TEACHERS.map(t => [t.name, t.employeeId, t.subject, t.phone, t.email, t.status]))}>⬇️ Export CSV</SecondaryBtn>
+          <SecondaryBtn onClick={() => downloadCSV('teachers.csv', ['Name','Email','Subject','Phone','Role'], teachers.map(t => [t.name, t.email, t.subject, t.phone, t.role]))}>⬇️ Export CSV</SecondaryBtn>
           <PrimaryBtn onClick={() => setAddOpen(true)}>➕ Add Staff</PrimaryBtn>
         </>} />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -37,19 +75,24 @@ export function Teachers() {
         <StatCard title="On Leave Today" value="2" icon="🌴" gradient="from-amber-500 to-orange-500" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {TEACHERS.map((t, i) => (
-          <div key={t.id} className={`glass p-5 animate-fade-in delay-${i * 100}`}>
+        {loading ? (
+          <div className="col-span-full text-center py-16 text-slate-400">
+            <p className="text-4xl mb-2 animate-pulse">⏳</p>
+            <p className="text-white font-semibold">Loading teachers...</p>
+          </div>
+        ) : teachers.map((t, i) => (
+          <div key={t._id || t.id} className={`glass p-5 animate-fade-in delay-${i * 100}`}>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>{t.name.charAt(0)}</div>
-              <div><p className="text-white font-semibold text-sm">{t.name}</p><p className="text-slate-400 text-xs">{t.employeeId}</p></div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>{t.name?.charAt(0)}</div>
+              <div><p className="text-white font-semibold text-sm">{t.name}</p><p className="text-slate-400 text-xs">{t.email}</p></div>
             </div>
             <div className="space-y-1.5">
-              {[['Subject', t.subject], ['Classes', t.class], ['Joined', t.joiningDate]].map(([l, v]) => (
+              {[['Subject', t.subject || 'N/A'], ['Phone', t.phone || 'N/A'], ['Role', t.role || 'Teacher']].map(([l, v]) => (
                 <div key={l} className="flex justify-between text-xs"><span className="text-slate-500">{l}</span><span className="text-slate-300">{v}</span></div>
               ))}
             </div>
             <div className="mt-3 flex justify-between items-center">
-              <Badge type="green">{t.status}</Badge>
+              <Badge type="green">Active</Badge>
               <div className="flex gap-1">
                 <button onClick={() => setViewT(t)} className="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 rounded-lg hover:bg-blue-500/10">View</button>
                 <button onClick={() => show(`📧 Reset email sent to ${t.email}`)} className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded-lg hover:bg-slate-700/30">Reset Pwd</button>
@@ -73,7 +116,7 @@ export function Teachers() {
           <FormField label="Address"><input placeholder="Full address" /></FormField>
           <div className="flex gap-3 justify-end pt-2 border-t border-slate-700/40">
             <SecondaryBtn onClick={() => setAddOpen(false)}>Cancel</SecondaryBtn>
-            <PrimaryBtn onClick={() => { setAddOpen(false); show(`✅ ${form.name || 'Staff'} added! Credentials sent to ${form.email || 'email'}`); }}>Create Staff Account</PrimaryBtn>
+            <PrimaryBtn onClick={handleAddTeacher}>Create Staff Account</PrimaryBtn>
           </div>
         </div>
       </Modal>
