@@ -149,13 +149,47 @@ export function Teachers() {
 // ─── CLASSES ─────────────────────────────────────────────────────────────────
 export function Classes() {
   const { show, Toast } = useToast();
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [viewC, setViewC] = useState(null);
+
+  const fetchClasses = async () => {
+    try {
+      setLoading(true);
+      const response = await classesApi.list();
+      setClasses(response.classes || []);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+      show('❌ Failed to load classes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  const handleAddClass = async () => {
+    try {
+      await classesApi.create({
+        name: 'Class 11',
+        sections: ['A', 'B'],
+        maxStrength: 50
+      });
+      show('✅ Class created successfully!');
+      setAddOpen(false);
+      fetchClasses();
+    } catch (error) {
+      show('❌ ' + (error.message || 'Failed to create class'));
+    }
+  };
 
   return (
     <div className="space-y-5">
       <Toast />
-      <PageHeader title="Classes & Sections" subtitle="Manage class structure and assignments"
+      <PageHeader title="Classes & Sections" subtitle={`${classes.length} classes managed`}
         actions={<PrimaryBtn onClick={() => setAddOpen(true)}>➕ Add Class</PrimaryBtn>} />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Classes" value="10" icon="🏫" gradient="from-blue-500 to-cyan-500" />
@@ -164,17 +198,22 @@ export function Classes() {
         <StatCard title="Total Students" value="200" icon="🎓" gradient="from-amber-500 to-orange-500" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {CLASSES.map((c, i) => (
-          <div key={c.id} className={`glass p-5 animate-fade-in delay-${i * 100}`}>
+        {loading ? (
+          <div className="col-span-full text-center py-16 text-slate-400">
+            <p className="text-4xl mb-2 animate-pulse">⏳</p>
+            <p className="text-white font-semibold">Loading classes...</p>
+          </div>
+        ) : classes.map((c, i) => (
+          <div key={c._id || c.id} className={`glass p-5 animate-fade-in delay-${i * 100}`}>
             <div className="flex justify-between items-start mb-3">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: 'linear-gradient(135deg,#3b82f6,#06b6d4)' }}>{c.name.replace('Class ', '')}</div>
-              <Badge type="blue">{c.sections.length} section{c.sections.length > 1 ? 's' : ''}</Badge>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: 'linear-gradient(135deg,#3b82f6,#06b6d4)' }}>{c.name?.replace('Class ', '')}</div>
+              <Badge type="blue">{(c.sections || []).length} section{(c.sections || []).length > 1 ? 's' : ''}</Badge>
             </div>
             <p className="text-white font-semibold mb-1">{c.name}</p>
-            <p className="text-slate-400 text-xs mb-3">Class Teacher: {c.classTeacher}</p>
-            <div className="flex gap-1 mb-3">{c.sections.map(s => <span key={s} className="badge badge-purple">Sec {s}</span>)}</div>
+            <p className="text-slate-400 text-xs mb-3">Class Teacher: {c.classTeacher || 'N/A'}</p>
+            <div className="flex gap-1 mb-3">{(c.sections || []).map(s => <span key={s} className="badge badge-purple">Sec {s}</span>)}</div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-400 text-xs">{c.students} students</span>
+              <span className="text-slate-400 text-xs">{c.students || 0} students</span>
               <div className="flex gap-1">
                 <button onClick={() => setViewC(c)} className="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 rounded-lg hover:bg-blue-500/10">View</button>
                 <button onClick={() => show(`➕ Section added to ${c.name}`)} className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded-lg hover:bg-slate-700/30">+ Section</button>
@@ -193,7 +232,7 @@ export function Classes() {
           <FormField label="Class Teacher"><select><option>Priya Verma</option><option>Amit Joshi</option><option>Sunita Mishra</option></select></FormField>
           <div className="flex gap-3 justify-end pt-2 border-t border-slate-700/40">
             <SecondaryBtn onClick={() => setAddOpen(false)}>Cancel</SecondaryBtn>
-            <PrimaryBtn onClick={() => { setAddOpen(false); show('✅ Class created successfully!'); }}>Create Class</PrimaryBtn>
+            <PrimaryBtn onClick={handleAddClass}>Create Class</PrimaryBtn>
           </div>
         </div>
       </Modal>
@@ -267,27 +306,68 @@ export function Timetable() {
 // ─── HOMEWORK ────────────────────────────────────────────────────────────────
 export function Homework() {
   const { show, Toast } = useToast();
+  const [homework, setHomework] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [viewHW, setViewHW] = useState(null);
   const STATUS_COLOR = { active: 'blue', due_today: 'yellow', overdue: 'red' };
 
+  const fetchHomework = async () => {
+    try {
+      setLoading(true);
+      const response = await homeworkApi.list({});
+      setHomework(response.homework || []);
+    } catch (error) {
+      console.error('Error fetching homework:', error);
+      show('❌ Failed to load homework');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHomework();
+  }, []);
+
+  const handleCreateHomework = async () => {
+    try {
+      await homeworkApi.create({
+        title: 'Chapter 5 Assignment',
+        subject: 'Mathematics',
+        class: 'Class 8',
+        dueDate: new Date().toISOString(),
+        maxMarks: 10
+      });
+      show('✅ Assignment created and notified to students!');
+      setOpen(false);
+      fetchHomework();
+    } catch (error) {
+      show('❌ ' + (error.message || 'Failed to create assignment'));
+    }
+  };
+
   return (
     <div className="space-y-5">
       <Toast />
-      <PageHeader title="Homework & Assignments" subtitle="Manage and track assignments"
+      <PageHeader title="Homework & Assignments" subtitle={`${homework.length} assignments`}
         actions={<>
-          <SecondaryBtn onClick={() => downloadCSV('homework.csv', ['Subject', 'Class', 'Title', 'Due Date', 'Submitted', 'Total'], HOMEWORK.map(h => [h.subject, h.class, h.title, h.dueDate, h.submissions, h.total]))}>⬇️ Export</SecondaryBtn>
+          <SecondaryBtn onClick={() => downloadCSV('homework.csv', ['Subject', 'Class', 'Title', 'Due Date'], homework.map(h => [h.subject, h.class, h.title, h.dueDate]))}>⬇️ Export</SecondaryBtn>
           <PrimaryBtn onClick={() => setOpen(true)}>➕ Create Assignment</PrimaryBtn>
         </>} />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Active" value={HOMEWORK.filter(h => h.status === 'active').length} icon="📝" gradient="from-blue-500 to-cyan-500" />
-        <StatCard title="Due Today" value={HOMEWORK.filter(h => h.status === 'due_today').length} icon="⏰" gradient="from-amber-500 to-orange-500" />
-        <StatCard title="Overdue" value={HOMEWORK.filter(h => h.status === 'overdue').length} icon="🚨" gradient="from-red-500 to-rose-500" />
+        <StatCard title="Active" value={homework.filter(h => h.status === 'active').length} icon="📝" gradient="from-blue-500 to-cyan-500" />
+        <StatCard title="Due Today" value={homework.filter(h => h.status === 'due_today').length} icon="⌛" gradient="from-amber-500 to-orange-500" />
+        <StatCard title="Overdue" value={homework.filter(h => h.status === 'overdue').length} icon="🚨" gradient="from-red-500 to-rose-500" />
         <StatCard title="Completed" value="12" change="this month" icon="✅" gradient="from-emerald-500 to-teal-500" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {HOMEWORK.map((h, i) => (
-          <div key={h.id} className={`glass p-5 animate-fade-in delay-${i * 100}`}>
+        {loading ? (
+          <div className="col-span-full text-center py-16 text-slate-400">
+            <p className="text-4xl mb-2 animate-pulse">⏳</p>
+            <p className="text-white font-semibold">Loading homework...</p>
+          </div>
+        ) : homework.map((h, i) => (
+          <div key={h._id || h.id} className={`glass p-5 animate-fade-in delay-${i * 100}`}>
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold" style={{ background: 'linear-gradient(135deg,#8b5cf6,#6d28d9)' }}>{h.subject.charAt(0)}</div>
@@ -322,7 +402,7 @@ export function Homework() {
           <FormField label="Description"><textarea rows={3} placeholder="Instructions for students..." /></FormField>
           <div className="flex gap-3 justify-end pt-2 border-t border-slate-700/40">
             <SecondaryBtn onClick={() => setOpen(false)}>Cancel</SecondaryBtn>
-            <PrimaryBtn onClick={() => { setOpen(false); show('✅ Assignment created and notified to students!'); }}>Create Assignment</PrimaryBtn>
+            <PrimaryBtn onClick={handleCreateHomework}>Create Assignment</PrimaryBtn>
           </div>
         </div>
       </Modal>
