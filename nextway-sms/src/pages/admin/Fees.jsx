@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader, PrimaryBtn, SecondaryBtn, Badge, GlassCard, StatCard, SectionTitle, SearchBar, Modal, FormField } from '../../components/ui';
-import { FEE_INVOICES, FEE_COLLECTION_DATA, STUDENTS } from '../../data/mockData';
+import { feesApi } from '../../services/api';
+import { FEE_COLLECTION_DATA } from '../../data/mockData';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const STATUS_MAP = { paid: 'green', partial: 'yellow', overdue: 'red', pending: 'blue' };
 
 export function Fees() {
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [collectModal, setCollectModal] = useState(null);
@@ -15,18 +18,47 @@ export function Fees() {
   const [method, setMethod] = useState('Cash');
   const [toastMsg, setToastMsg] = useState('');
 
-  const filtered = FEE_INVOICES.filter(f =>
-    f.student.toLowerCase().includes(search.toLowerCase()) &&
-    (!statusFilter || f.status === statusFilter)
-  );
-  const totalCollected = FEE_INVOICES.reduce((s, f) => s + f.paid, 0);
-  const totalPending   = FEE_INVOICES.reduce((s, f) => s + f.balance, 0);
-
   const showToast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 2500); };
 
-  const handleCollect = () => {
-    showToast(`✅ Payment of ₹${parseInt(amount||0).toLocaleString()} recorded via ${method}`);
-    setCollectModal(null); setAmount(''); setMethod('Cash');
+  // Fetch invoices from API
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        setLoading(true);
+        const response = await feesApi.invoices({});
+        setInvoices(response.invoices || []);
+      } catch (error) {
+        console.error('Error fetching invoices:', error);
+        showToast('❌ Failed to load invoices');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInvoices();
+  }, []);
+
+  const filtered = invoices.filter(f =>
+    f.student?.toLowerCase().includes(search.toLowerCase()) &&
+    (!statusFilter || f.status === statusFilter)
+  );
+  const totalCollected = invoices.reduce((s, f) => s + (f.paid || 0), 0);
+  const totalPending   = invoices.reduce((s, f) => s + (f.balance || 0), 0);
+
+  const handleCollect = async () => {
+    try {
+      await feesApi.collectPayment({
+        invoiceId: collectModal?._id || collectModal?.id,
+        amount: parseFloat(amount),
+        method
+      });
+      showToast(`✅ Payment of ₹${parseInt(amount||0).toLocaleString()} recorded via ${method}`);
+      setCollectModal(null); setAmount(''); setMethod('Cash');
+      // Refresh invoices
+      const response = await feesApi.invoices({});
+      setInvoices(response.invoices || []);
+    } catch (error) {
+      showToast('❌ ' + (error.message || 'Failed to record payment'));
+    }
   };
 
   return (
@@ -49,9 +81,9 @@ export function Fees() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Collected" value={`₹${(totalCollected/1000).toFixed(1)}k`} change="April 2026" changeType="up" icon="✅" gradient="from-emerald-500 to-teal-500" delay={0}/>
-        <StatCard title="Pending Amount"  value={`₹${(totalPending/1000).toFixed(1)}k`} change="needs attention" changeType="down" icon="⏳" gradient="from-amber-500 to-orange-500" delay={0.1}/>
-        <StatCard title="Overdue"         value={FEE_INVOICES.filter(f=>f.status==='overdue').length} change="students" icon="🚨" gradient="from-red-500 to-rose-500" delay={0.2}/>
-        <StatCard title="Fully Paid"      value={FEE_INVOICES.filter(f=>f.status==='paid').length}    change="invoices" icon="💳" gradient="from-blue-500 to-cyan-500" delay={0.3}/>
+        <StatCard title="Pending Amount"  value={`₹${(totalPending/1000).toFixed(1)}k`} change="needs attention" changeType="down" icon="⌛" gradient="from-amber-500 to-orange-500" delay={0.1}/>
+        <StatCard title="Overdue"         value={invoices.filter(f=>f.status==='overdue').length} change="students" icon="🚨" gradient="from-red-500 to-rose-500" delay={0.2}/>
+        <StatCard title="Fully Paid"      value={invoices.filter(f=>f.status==='paid').length}    change="invoices" icon="💳" gradient="from-blue-500 to-cyan-500" delay={0.3}/>
       </div>
 
       {/* Charts + Fee heads */}
