@@ -1,0 +1,7 @@
+Name,Role,Leave Type,From Date,To Date,Days,Status
+Priya Verma,Teacher,Emergency Leave,2026-02-24,2026-02-21,4,Pending
+Amit Joshi,Teacher,Personal Leave,2026-02-16,2026-04-19,4,Pending
+Sunita Mishra,Teacher,Personal Leave,2026-02-19,2026-03-18,5,Approved
+Rajesh Tiwari,Teacher,Medical Leave,2026-03-23,2026-02-13,3,Rejected
+Neha Agarwal,Teacher,Emergency Leave,2026-03-25,2026-01-21,5,Pending
+Vikram Singh,Teacher,Personal Leave,2026-03-28,2026-01-24,4,Approved
