@@ -45,10 +45,9 @@ async function seed(){
   await School.findByIdAndUpdate(school._id,{currentAcademicYear:ay._id});
 
   // Staff
-  const hash = async p => bcrypt.hash(p,12);
-  const adminUser = await User.create({ schoolId:school._id, name:'Rahul Sharma',   email:'admin@nextway.edu',          password:await hash('Admin@2026!'),     role:'school_admin', mustChangePassword:false });
-  const princUser = await User.create({ schoolId:school._id, name:'Dr. Sunita Rao', email:'principal@nextway.edu',      password:await hash('Principal@2026!'), role:'principal',    mustChangePassword:false });
-  const accUser   = await User.create({ schoolId:school._id, name:'Amit Kulkarni',  email:'accounts@nextway.edu',       password:await hash('Accounts@2026!'), role:'accountant',  mustChangePassword:false });
+  const adminUser = await User.create({ schoolId:school._id, name:'Rahul Sharma',   email:'admin@nextway.edu',          password:'Admin@2026!',     role:'school_admin', mustChangePassword:false });
+  const princUser = await User.create({ schoolId:school._id, name:'Dr. Sunita Rao', email:'principal@nextway.edu',      password:'Principal@2026!', role:'principal',    mustChangePassword:false });
+  const accUser   = await User.create({ schoolId:school._id, name:'Amit Kulkarni',  email:'accounts@nextway.edu',       password:'Accounts@2026!', role:'accountant',  mustChangePassword:false });
 
   // Teachers
   const tData=[
@@ -59,7 +58,7 @@ async function seed(){
     {name:'Pooja Gupta',   email:'pooja.t@nextway.edu'},  {name:'Manoj Patel',   email:'manoj@nextway.edu'},
   ];
   const teachers=[];
-  for(const t of tData) teachers.push(await User.create({schoolId:school._id,name:t.name,email:t.email,password:await hash('Teacher@2026!'),role:'teacher',mustChangePassword:false}));
+  for(const t of tData) teachers.push(await User.create({schoolId:school._id,name:t.name,email:t.email,password:'Teacher@2026!',role:'teacher',mustChangePassword:false}));
 
   // Classes
   const cCfg=[{n:'Class 1',o:1},{n:'Class 2',o:2},{n:'Class 3',o:3},{n:'Class 4',o:4},{n:'Class 5',o:5},{n:'Class 6',o:6},{n:'Class 7',o:7},{n:'Class 8',o:8},{n:'Class 9',o:9},{n:'Class 10',o:10}];
@@ -111,7 +110,7 @@ async function seed(){
       const g=rand(0,1)?'Male':'Female';
       const {firstName,lastName}=rName(g);
       const admNo=`NWA/2024/${pad(seq)}`;
-      const sUser=await User.create({schoolId:school._id,name:`${firstName} ${lastName}`,email:`${firstName.toLowerCase()}${seq}@student.nextway.edu`,password:await hash('Student@2026!'),role:'student',mustChangePassword:false});
+      const sUser=await User.create({schoolId:school._id,name:`${firstName} ${lastName}`,email:`${firstName.toLowerCase()}${seq}@student.nextway.edu`,password:'Student@2026!',role:'student',mustChangePassword:false});
       const stu=await Student.create({schoolId:school._id,userId:sUser._id,academicYearId:ay._id,classId,sectionId,admissionNo:admNo,rollNo:String(i),firstName,lastName,gender:g,dateOfBirth:rDOB(classNum),bloodGroup:pick(BG),phone:rPhone(),address:{city:pick(CITIES),state:'Madhya Pradesh'},status:'active'});
       allStu.push({stu,cn,sn,classId,sectionId,classNum});
 
@@ -256,8 +255,8 @@ async function seed(){
   for(let i=0;i<audits.length;i++) await AuditLog.create({schoolId:school._id,userId:adminUser._id,...audits[i],ipAddress:`192.168.1.${rand(10,50)}`,createdAt:dAgo(rand(0,7))});
 
   // Demo users with known credentials
-  await User.create({schoolId:school._id,name:'Aarav Gupta',email:'aarav@student.nextway.edu',password:await hash('Student@2026!'),role:'student',mustChangePassword:false});
-  await User.create({schoolId:school._id,name:'Suresh Gupta',email:'suresh@gmail.com',password:await hash('Parent@2026!'),role:'parent',mustChangePassword:false});
+  await User.create({schoolId:school._id,name:'Aarav Gupta',email:'aarav@student.nextway.edu',password:'Student@2026!',role:'student',mustChangePassword:false});
+  await User.create({schoolId:school._id,name:'Suresh Gupta',email:'suresh@gmail.com',password:'Parent@2026!',role:'parent',mustChangePassword:false});
 
   console.log('\n' + '='.repeat(55));
   console.log('SEED COMPLETE - ' + allStu.length + ' students, ' + (invSeq-1) + ' invoices, ' + resCnt + ' results');
