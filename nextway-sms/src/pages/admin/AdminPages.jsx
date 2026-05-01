@@ -959,26 +959,48 @@ export function Leaves() {
 // ─── COMMUNICATION ───────────────────────────────────────────────────────────
 export function Communication() {
   const { show, Toast } = useToast();
+  const [notices, setNotices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
   const [title, setTitle] = useState('');
-  const [selectedChat, setSelectedChat] = useState(0);
-  const [chatMsg, setChatMsg] = useState('');
-  const [chats, setChats] = useState([
-    { id: 0, name: 'Priya Verma', role: 'Math Teacher', msgs: [{ from: 'them', text: 'Aarav scored 87 in today\'s test!' }, { from: 'me', text: 'Great! Thanks for the update.' }] },
-    { id: 1, name: 'Amit Joshi', role: 'Science Teacher', msgs: [{ from: 'them', text: 'Lab report submission pending for 5 students.' }] },
-    { id: 2, name: 'All Teachers', role: 'Group', msgs: [{ from: 'me', text: 'Staff meeting tomorrow at 4 PM.' }] },
-  ]);
 
-  const sendChat = () => {
-    if (!chatMsg.trim()) return;
-    setChats(prev => prev.map((c, i) => i === selectedChat ? { ...c, msgs: [...c.msgs, { from: 'me', text: chatMsg }] } : c));
-    setChatMsg('');
+  const fetchNotices = async () => {
+    try {
+      setLoading(true);
+      const response = await noticesApi.list();
+      setNotices(response.notices || []);
+    } catch (error) {
+      console.error('Error fetching notices:', error);
+      show('❌ Failed to load notices');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotices();
+  }, []);
+
+  const handleCreateNotice = async () => {
+    try {
+      await noticesApi.create({
+        title,
+        message: msg,
+        priority: 'normal'
+      });
+      show('✅ Notice created successfully!');
+      setTitle('');
+      setMsg('');
+      fetchNotices();
+    } catch (error) {
+      show('❌ ' + (error.message || 'Failed to create notice'));
+    }
   };
 
   return (
     <div className="space-y-5">
       <Toast />
-      <PageHeader title="Communication" subtitle="Internal messages and broadcast announcements" />
+      <PageHeader title="Communication" subtitle={`${notices.length} notices and announcements`} />
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Chat list */}
         <GlassCard noHover padding="p-4">
