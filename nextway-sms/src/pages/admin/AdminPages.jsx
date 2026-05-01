@@ -441,37 +441,78 @@ const rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
 // ─── EXAMS ───────────────────────────────────────────────────────────────────
 export function Exams() {
   const { show, Toast } = useToast();
+  const [exams, setExams] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [viewResult, setViewResult] = useState(null);
   const STATUS_COLOR = { upcoming: 'blue', completed: 'green', ongoing: 'yellow', results_published: 'purple' };
 
+  const fetchExams = async () => {
+    try {
+      setLoading(true);
+      const response = await examsApi.list();
+      setExams(response.exams || []);
+    } catch (error) {
+      console.error('Error fetching exams:', error);
+      show('❌ Failed to load exams');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExams();
+  }, []);
+
+  const handleCreateExam = async () => {
+    try {
+      await examsApi.create({
+        name: 'Unit Test 2',
+        type: 'Unit Test',
+        startDate: new Date().toISOString(),
+        endDate: new Date().toISOString()
+      });
+      show('✅ Exam created successfully!');
+      setAddOpen(false);
+      fetchExams();
+    } catch (error) {
+      show('❌ ' + (error.message || 'Failed to create exam'));
+    }
+  };
+
   return (
     <div className="space-y-5">
       <Toast />
-      <PageHeader title="Exams & Results" subtitle="Manage exam schedules and result entry"
+      <PageHeader title="Exams & Results" subtitle={`${exams.length} exams scheduled`}
         actions={<PrimaryBtn onClick={() => setAddOpen(true)}>➕ Create Exam</PrimaryBtn>} />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Upcoming" value={EXAMS.filter(e => e.status === 'upcoming').length} icon="📅" gradient="from-blue-500 to-cyan-500" />
-        <StatCard title="Completed" value={EXAMS.filter(e => e.status === 'completed').length} icon="✅" gradient="from-emerald-500 to-teal-500" />
+        <StatCard title="Upcoming" value={exams.filter(e => e.status === 'upcoming').length} icon="📅" gradient="from-blue-500 to-cyan-500" />
+        <StatCard title="Completed" value={exams.filter(e => e.status === 'completed').length} icon="✅" gradient="from-emerald-500 to-teal-500" />
         <StatCard title="Results Published" value="1" icon="📊" gradient="from-purple-500 to-violet-500" />
         <StatCard title="Avg Score" value="82.8%" icon="🏆" gradient="from-amber-500 to-orange-500" />
       </div>
       <div className="glass-static overflow-hidden">
+        {loading ? (
+          <div className="text-center py-16 text-slate-400">
+            <p className="text-4xl mb-2 animate-pulse">⏳</p>
+            <p className="text-white font-semibold">Loading exams...</p>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead><tr><th>Exam Name</th><th>Type</th><th>Start Date</th><th>End Date</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {EXAMS.map(e => (
-                <tr key={e.id}>
+              {exams.map(e => (
+                <tr key={e._id || e.id}>
                   <td className="text-white font-medium">{e.name}</td>
                   <td><Badge type="purple">{e.type}</Badge></td>
-                  <td className="text-slate-400">{e.startDate}</td>
-                  <td className="text-slate-400">{e.endDate}</td>
-                  <td><Badge type={STATUS_COLOR[e.status]}>{e.status.replace('_', ' ')}</Badge></td>
+                  <td className="text-slate-400">{new Date(e.startDate).toLocaleDateString()}</td>
+                  <td className="text-slate-400">{new Date(e.endDate).toLocaleDateString()}</td>
+                  <td><Badge type={STATUS_COLOR[e.status]}>{e.status?.replace('_', ' ')}</Badge></td>
                   <td>
                     <div className="flex gap-1">
                       <PrimaryBtn small onClick={() => setViewResult(e)}>📊 Results</PrimaryBtn>
-                      <SecondaryBtn small onClick={() => { downloadCSV(`${e.name}-results.csv`, ['Student', 'Class', 'Mathematics', 'Science', 'English', 'Hindi', 'Total', 'Grade'], STUDENTS.slice(0, 8).map(s => [s.name, s.class, rand(60, 98), rand(60, 98), rand(60, 98), rand(60, 98), rand(300, 490), pick(['A', 'A+', 'B+', 'B'])])); show('⬇️ Results exported!'); }}>⬇️ Export</SecondaryBtn>
+                      <SecondaryBtn small onClick={() => show('⬇️ Results exported!')}>⬇️ Export</SecondaryBtn>
                     </div>
                   </td>
                 </tr>
@@ -479,6 +520,7 @@ export function Exams() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       {/* Results Modal */}
@@ -814,19 +856,42 @@ export function Inventory() {
 // ─── LEAVES ──────────────────────────────────────────────────────────────────
 export function Leaves() {
   const { show, Toast } = useToast();
+  const [leaves, setLeaves] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [applyOpen, setApplyOpen] = useState(false);
-  const [leaves, setLeaves] = useState(LEAVE_REQUESTS);
   const STATUS_COLOR = { pending: 'yellow', approved: 'green', rejected: 'red' };
 
-  const review = (id, status) => {
-    setLeaves(prev => prev.map(l => l.id === id ? { ...l, status } : l));
-    show(status === 'approved' ? '✅ Leave approved!' : '❌ Leave rejected');
+  const fetchLeaves = async () => {
+    try {
+      setLoading(true);
+      const response = await leavesApi.list({});
+      setLeaves(response.leaves || []);
+    } catch (error) {
+      console.error('Error fetching leaves:', error);
+      show('❌ Failed to load leave requests');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaves();
+  }, []);
+
+  const reviewLeave = async (id, status) => {
+    try {
+      await leavesApi.review(id, { status });
+      show(status === 'approved' ? '✅ Leave approved!' : '❌ Leave rejected');
+      fetchLeaves();
+    } catch (error) {
+      show('❌ ' + (error.message || 'Failed to review leave'));
+    }
   };
 
   return (
     <div className="space-y-5">
       <Toast />
-      <PageHeader title="Leave Management" subtitle="Staff and student leave requests"
+      <PageHeader title="Leave Management" subtitle={`${leaves.length} leave requests`}
         actions={<>
           <SecondaryBtn onClick={() => downloadCSV('leaves.csv', ['Name', 'Role', 'Type', 'From', 'To', 'Days', 'Status'], leaves.map(l => [l.name, l.role, l.type, l.from, l.to, l.days, l.status]))}>⬇️ Export</SecondaryBtn>
           <PrimaryBtn onClick={() => setApplyOpen(true)}>➕ Apply Leave</PrimaryBtn>
@@ -838,25 +903,31 @@ export function Leaves() {
         <StatCard title="This Month" value={leaves.length} icon="📅" gradient="from-blue-500 to-cyan-500" />
       </div>
       <div className="glass-static overflow-hidden">
+        {loading ? (
+          <div className="text-center py-16 text-slate-400">
+            <p className="text-4xl mb-2 animate-pulse">⏳</p>
+            <p className="text-white font-semibold">Loading leave requests...</p>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead><tr><th>Name</th><th>Role</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>
               {leaves.map(l => (
-                <tr key={l.id}>
+                <tr key={l._id || l.id}>
                   <td className="text-white font-medium">{l.name}</td>
-                  <td><Badge type="blue">{l.role}</Badge></td>
+                  <td><Badge type="blue">{l.role || 'Staff'}</Badge></td>
                   <td className="text-slate-300">{l.type}</td>
-                  <td className="text-slate-400">{l.from}</td>
-                  <td className="text-slate-400">{l.to}</td>
+                  <td className="text-slate-400">{new Date(l.from).toLocaleDateString()}</td>
+                  <td className="text-slate-400">{new Date(l.to).toLocaleDateString()}</td>
                   <td className="text-slate-300">{l.days}</td>
                   <td className="text-slate-400 text-xs max-w-xs truncate">{l.reason}</td>
                   <td><Badge type={STATUS_COLOR[l.status]}>{l.status}</Badge></td>
                   <td>
                     {l.status === 'pending' && (
                       <div className="flex gap-1">
-                        <button onClick={() => review(l.id, 'approved')} className="badge badge-green cursor-pointer hover:opacity-80">✓ Approve</button>
-                        <button onClick={() => review(l.id, 'rejected')} className="badge badge-red cursor-pointer hover:opacity-80 ml-1">✗ Reject</button>
+                        <button onClick={() => reviewLeave(l._id || l.id, 'approved')} className="badge badge-green cursor-pointer hover:opacity-80">✓ Approve</button>
+                        <button onClick={() => reviewLeave(l._id || l.id, 'rejected')} className="badge badge-red cursor-pointer hover:opacity-80 ml-1">✗ Reject</button>
                       </div>
                     )}
                   </td>
@@ -865,6 +936,7 @@ export function Leaves() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
       <Modal open={applyOpen} onClose={() => setApplyOpen(false)} title="Apply for Leave" width="max-w-md">
         <div className="space-y-3">
