@@ -94,6 +94,38 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ── TEMPORARY: Seed Route (REMOVE AFTER FIRST USE!) ─────────────────────────────
+app.get('/api/v1/seed-database', async (req, res) => {
+  try {
+    const seedSecret = req.query.secret;
+    
+    // Check for correct secret
+    if (seedSecret !== 'SeedNextway2026!') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Unauthorized. Add ?secret=SeedNextway2026! to access' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Seeding started... This will take 2-3 minutes. Check logs.',
+      instruction: 'Visit /health endpoint to verify after 3 minutes' 
+    });
+    
+    // Run seed in background
+    const { spawn } = require('child_process');
+    const seed = spawn('node', ['src/config/seed.js'], {
+      detached: true,
+      stdio: 'ignore'
+    });
+    
+    seed.unref();
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ── API Routes ─────────────────────────────────────────────────────────────
 const BASE = '/api/v1';
 
