@@ -46,6 +46,8 @@ app.use(cors({
     process.env.CLIENT_URL || 'http://localhost:5173',
     'http://localhost:3000',
     'http://localhost:5174',
+    'https://sms-new-sand.vercel.app',  // Added Vercel production URL
+    'https://sms-new.vercel.app',        // Fallback Vercel URL
   ],
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
