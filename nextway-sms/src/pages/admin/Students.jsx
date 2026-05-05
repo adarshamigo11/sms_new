@@ -29,7 +29,7 @@ export default function Students() {
       setStudents(response.students || []);
     } catch (error) {
       console.error('Error fetching students:', error);
-      showToast('❌ Failed to load students');
+      setStudents([]);
     } finally {
       setLoading(false);
     }

@@ -31,7 +31,8 @@ export default function Attendance() {
         setAttendance(initialAttendance);
       } catch (error) {
         console.error('Error fetching students:', error);
-        showToast('❌ Failed to load students');
+        setStudents([]);
+        setAttendance({});
       }
     };
     fetchStudents();

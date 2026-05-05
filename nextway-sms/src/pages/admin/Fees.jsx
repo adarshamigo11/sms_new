@@ -29,7 +29,7 @@ export function Fees() {
         setInvoices(response.invoices || []);
       } catch (error) {
         console.error('Error fetching invoices:', error);
-        showToast('❌ Failed to load invoices');
+        setInvoices([]);
       } finally {
         setLoading(false);
       }

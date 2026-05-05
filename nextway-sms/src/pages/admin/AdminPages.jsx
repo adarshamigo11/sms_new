@@ -31,7 +31,8 @@ export function Teachers() {
       setTeachers(response.users || []);
     } catch (error) {
       console.error('Error fetching teachers:', error);
-      show('❌ Failed to load teachers');
+      // Don't show error toast, just set empty array
+      setTeachers([]);
     } finally {
       setLoading(false);
     }
@@ -39,7 +40,7 @@ export function Teachers() {
 
   useEffect(() => {
     fetchTeachers();
-  }, []);
+  }, []); 
 
   const handleAddTeacher = async () => {
     try {
@@ -161,7 +162,7 @@ export function Classes() {
       setClasses(response.classes || []);
     } catch (error) {
       console.error('Error fetching classes:', error);
-      show('❌ Failed to load classes');
+      setClasses([]);
     } finally {
       setLoading(false);
     }
@@ -319,7 +320,7 @@ export function Homework() {
       setHomework(response.homework || []);
     } catch (error) {
       console.error('Error fetching homework:', error);
-      show('❌ Failed to load homework');
+      setHomework([]);
     } finally {
       setLoading(false);
     }
@@ -454,7 +455,7 @@ export function Exams() {
       setExams(response.exams || []);
     } catch (error) {
       console.error('Error fetching exams:', error);
-      show('❌ Failed to load exams');
+      setExams([]);
     } finally {
       setLoading(false);
     }
@@ -868,7 +869,7 @@ export function Leaves() {
       setLeaves(response.leaves || []);
     } catch (error) {
       console.error('Error fetching leaves:', error);
-      show('❌ Failed to load leave requests');
+      setLeaves([]);
     } finally {
       setLoading(false);
     }
@@ -971,7 +972,7 @@ export function Communication() {
       setNotices(response.notices || []);
     } catch (error) {
       console.error('Error fetching notices:', error);
-      show('❌ Failed to load notices');
+      setNotices([]);
     } finally {
       setLoading(false);
     }
