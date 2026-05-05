@@ -17,7 +17,7 @@ export default function Students() {
   const [viewStudent,  setViewStudent] = useState(null);
   const [editStudent,  setEditStudent] = useState(null);
   const [toast,        setToast]       = useState('');
-  const [form,         setForm]        = useState({ name:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'' });
+  const [form,         setForm]        = useState({ firstName:'', lastName:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'', email:'' });
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
@@ -50,18 +50,39 @@ export default function Students() {
 
   const handleAdd = async () => {
     try {
-      await studentsApi.create({
-        name: form.name,
-        class: form.class,
-        section: form.section,
+      // Map class name to classId - you'll need to fetch this from API or use hardcoded mapping
+      const classMap = {
+        'Class 1': '69f993cecadb689a0ada52e0',
+        'Class 2': '69f993cecadb689a0ada52e1',
+        'Class 3': '69f993cecadb689a0ada52e2',
+        'Class 4': '69f993cecadb689a0ada52e3',
+        'Class 5': '69f993cecadb689a0ada52e4',
+        'Class 6': '69f993cecadb689a0ada52e5',
+        'Class 7': '69f993cecadb689a0ada52e6',
+        'Class 8': '69f993cecadb689a0ada52e7',
+        'Class 9': '69f993cecadb689a0ada52e8',
+        'Class 10': '69f993cecadb689a0ada52e9',
+      };
+      
+      const response = await studentsApi.create({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        classId: classMap[form.class] || classMap['Class 8'],
         gender: form.gender,
-        dob: form.dob,
-        parentPhone: form.phone,
-        bloodGroup: form.blood
+        dateOfBirth: form.dob,
+        phone: form.phone,
+        bloodGroup: form.blood,
+        email: form.email || undefined
       });
-      showToast('✅ Student added successfully!');
+      
+      // Show credentials to admin
+      const creds = response.tempPassword ? 
+        `✅ Student created! Email: ${response.student.email || form.email}, Password: ${response.tempPassword}` :
+        '✅ Student added successfully!';
+      showToast(creds);
+      
       setAddOpen(false);
-      setForm({ name:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'' });
+      setForm({ firstName:'', lastName:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'', email:'' });
       fetchStudents(); // Refresh list
     } catch (error) {
       showToast('❌ ' + (error.message || 'Failed to add student'));
@@ -189,8 +210,8 @@ export default function Students() {
       {/* ── ADD STUDENT MODAL ── */}
       <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Add New Student" width="max-w-2xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="First Name" required><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Aarav"/></FormField>
-          <FormField label="Last Name"  required><input placeholder="e.g. Gupta"/></FormField>
+          <FormField label="First Name" required><input value={form.firstName} onChange={e=>setForm(f=>({...f,firstName:e.target.value}))} placeholder="e.g. Aarav"/></FormField>
+          <FormField label="Last Name"  required><input value={form.lastName} onChange={e=>setForm(f=>({...f,lastName:e.target.value}))} placeholder="e.g. Gupta"/></FormField>
           <FormField label="Date of Birth" required><input type="date" value={form.dob} onChange={e=>setForm(f=>({...f,dob:e.target.value}))}/></FormField>
           <FormField label="Gender">
             <select value={form.gender} onChange={e=>setForm(f=>({...f,gender:e.target.value}))}>
@@ -199,7 +220,7 @@ export default function Students() {
           </FormField>
           <FormField label="Class">
             <select value={form.class} onChange={e=>setForm(f=>({...f,class:e.target.value}))}>
-              {['Class 1','Class 2','Class 6','Class 7','Class 8','Class 9','Class 10'].map(c=><option key={c}>{c}</option>)}
+              {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'].map(c=><option key={c}>{c}</option>)}
             </select>
           </FormField>
           <FormField label="Section">
@@ -210,6 +231,9 @@ export default function Students() {
           <FormField label="Parent Phone" required>
             <input type="tel" value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} placeholder="10-digit number"/>
           </FormField>
+          <FormField label="Student Email (optional)">
+            <input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} placeholder="student@email.com"/>
+          </FormField>
           <FormField label="Blood Group">
             <select value={form.blood} onChange={e=>setForm(f=>({...f,blood:e.target.value}))}>
               <option value="">Unknown</option>
@@ -217,16 +241,18 @@ export default function Students() {
             </select>
           </FormField>
           <FormField label="Aadhaar No"><input placeholder="12-digit number" maxLength={12}/></FormField>
-          <FormField label="Admission No"><input placeholder="Auto-generated on save" disabled style={{opacity:0.5}}/></FormField>
         </div>
         <div className="mt-4">
           <FormField label="Home Address">
             <textarea rows={2} placeholder="Full residential address…"/>
           </FormField>
         </div>
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mt-4">
+          <p className="text-blue-400 text-xs">ℹ️ A student account will be created automatically. Login credentials will be shown after creation.</p>
+        </div>
         <div className="flex gap-3 mt-5 justify-end border-t border-slate-700/40 pt-4">
           <SecondaryBtn onClick={() => setAddOpen(false)}>Cancel</SecondaryBtn>
-          <PrimaryBtn onClick={handleAdd} disabled={!form.name || !form.phone}>✅ Create Student</PrimaryBtn>
+          <PrimaryBtn onClick={handleAdd} disabled={!form.firstName || !form.lastName || !form.phone}>✅ Create Student & Account</PrimaryBtn>
         </div>
       </Modal>
 
