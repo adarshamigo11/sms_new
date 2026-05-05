@@ -68,6 +68,18 @@ router.post('/',
     const year  = new Date().getFullYear();
     const admissionNo = generateAdmissionNo('NWA', year, count + 1);
 
+    // Get current academic year if not provided
+    let ayId = academicYearId;
+    if (!ayId) {
+      const AcademicYear = require('../../models/AcademicYear');
+      const currentAY = await AcademicYear.findOne({ schoolId: req.schoolId, isCurrent: true });
+      if (currentAY) {
+        ayId = currentAY._id;
+      } else {
+        return res.status(400).json({ success: false, message: 'No academic year found. Please create one first.' });
+      }
+    }
+
     // Create login user for student
     const studentEmail = email || `${admissionNo.replace(/\//g,'').toLowerCase()}@student.nextway.edu`;
     const studentPassword = req.body.password || `Student@${admissionNo.replace(/\//g,'')}`;
@@ -84,7 +96,7 @@ router.post('/',
     const student = await Student.create({
       schoolId: req.schoolId,
       userId:   userDoc._id,
-      academicYearId: academicYearId || null,
+      academicYearId: ayId,
       classId, sectionId, firstName, lastName,
       gender, dateOfBirth, phone, bloodGroup,
       aadhaarNo, address, category,
