@@ -5,7 +5,6 @@ import { ApiError } from '../../services/api';
 
 const ROLES = [
   { key:'admin',   label:'School Admin', icon:'🏫', color:'from-blue-500 to-cyan-500',    desc:'Full access · All modules',     email:'admin@nextway.edu'           },
-  { key:'principal', label:'Principal', icon:'???', color:'from-indigo-500 to-purple-500', desc:'Oversee academics � Approvals', email:'principal@nextway.edu' },
   { key:'teacher', label:'Teacher',      icon:'👩‍🏫', color:'from-emerald-500 to-teal-500', desc:'Classes · Attendance · Grades',  email:'priya@nextway.edu'            },
   { key:'student', label:'Student',      icon:'🎓', color:'from-purple-500 to-violet-500', desc:'Dashboard · AI Doubt Solver',   email:'aarav@student.nextway.edu'    },
   { key:'parent',  label:'Parent',       icon:'👨‍👩‍👧', color:'from-amber-500 to-orange-500',  desc:"Track your child's progress",  email:'suresh@gmail.com'             },
@@ -30,7 +29,6 @@ export default function Login() {
   const [loading,  setLoading]   = useState(false);
   const [error,    setError]     = useState('');
 
-  const ROUTE_MAP = { school_admin:'admin', principal:'admin', teacher:'teacher', student:'student', parent:'parent' };
 
   const handleRoleSelect = (r) => { setSelected(r.key); setEmail(r.email); setError(''); };
 

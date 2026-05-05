@@ -25,7 +25,6 @@ const NAV_LINKS = {
     { to:'/admin/settings',      icon:'⚙️', label:'Settings' },
     { to:'/admin/audit',         icon:'🔍', label:'Audit Logs' },
   ],
-  principal: [
     { to:'/admin/dashboard',     icon:'📊', label:'Dashboard' },
     { to:'/admin/students',      icon:'🎓', label:'Students' },
     { to:'/admin/teachers',      icon:'👩‍🏫', label:'Teachers & Staff' },
@@ -68,7 +67,6 @@ const NAV_LINKS = {
 
 const ROLE_META = {
   admin:    { grad:'from-blue-500 to-cyan-500',     label:'School Admin',    accent:'59,130,246' },
-  principal:{ grad:'from-indigo-500 to-purple-500', label:'Principal',       accent:'99,102,241' },
   teacher:  { grad:'from-emerald-500 to-teal-500',  label:'Teacher',         accent:'16,185,129' },
   student:  { grad:'from-purple-500 to-violet-500', label:'Student',         accent:'139,92,246' },
   parent:   { grad:'from-amber-500 to-orange-500',  label:'Parent',          accent:'245,158,11' },
@@ -94,7 +92,6 @@ export default function AppLayout() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  const role = user.role === 'school_admin' || user.role === 'principal' ? 'admin' : user.role;
   const links = NAV_LINKS[user.role] || NAV_LINKS[role] || [];
   const meta  = ROLE_META[user.role] || ROLE_META.admin;
 
