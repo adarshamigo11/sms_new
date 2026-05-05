@@ -41,7 +41,12 @@ export default function Login() {
       console.log('🔐 Attempting login with:', email);
       const user = await login(email, password);
       console.log('✅ Login successful:', user);
-      const role = ROUTE_MAP[user.role] || 'admin';
+      
+      // Map backend role to frontend route
+      const routeMap = { school_admin:'admin', teacher:'teacher', student:'student', parent:'parent' };
+      const role = routeMap[user.role] || 'admin';
+      console.log('🧭 Navigating to:', `/${role}/dashboard`);
+      
       navigate(`/${role}/dashboard`);
     } catch (err) {
       console.error('❌ Login error:', err);
