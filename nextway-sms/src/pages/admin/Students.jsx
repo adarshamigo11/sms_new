@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { PageHeader, PrimaryBtn, SecondaryBtn, SearchBar, Badge, Modal, FormField, StatCard, GlassCard, SectionTitle, DangerBtn } from '../../components/ui';
-import { studentsApi } from '../../services/api';
+import { studentsApi, classesApi } from '../../services/api';
 
 const STATUS_MAP = { active: 'green', inactive: 'red' };
 const FEE_MAP    = { paid: 'green', pending: 'yellow', overdue: 'red' };
@@ -9,6 +9,7 @@ const GENDER_GRAD = { Male: 'from-blue-500 to-cyan-500', Female: 'from-pink-500 
 
 export default function Students() {
   const [students, setStudents] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search,       setSearch]      = useState('');
   const [filterClass,  setFilterClass] = useState('');
@@ -35,9 +36,21 @@ export default function Students() {
     }
   };
 
-  // Load students on mount
+  // Fetch classes for mapping
+  const fetchClasses = async () => {
+    try {
+      const response = await classesApi.list();
+      setClasses(response.classes || []);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+      setClasses([]);
+    }
+  };
+
+  // Load data on mount
   useEffect(() => {
     fetchStudents();
+    fetchClasses();
   }, []);
 
   const filtered = useMemo(() =>
@@ -50,24 +63,18 @@ export default function Students() {
 
   const handleAdd = async () => {
     try {
-      // Map class name to classId - you'll need to fetch this from API or use hardcoded mapping
-      const classMap = {
-        'Class 1': '69f993cecadb689a0ada52e0',
-        'Class 2': '69f993cecadb689a0ada52e1',
-        'Class 3': '69f993cecadb689a0ada52e2',
-        'Class 4': '69f993cecadb689a0ada52e3',
-        'Class 5': '69f993cecadb689a0ada52e4',
-        'Class 6': '69f993cecadb689a0ada52e5',
-        'Class 7': '69f993cecadb689a0ada52e6',
-        'Class 8': '69f993cecadb689a0ada52e7',
-        'Class 9': '69f993cecadb689a0ada52e8',
-        'Class 10': '69f993cecadb689a0ada52e9',
-      };
+      // Find the class ID from the fetched classes
+      const selectedClass = classes.find(c => c.name === form.class);
+      
+      if (!selectedClass) {
+        showToast('❌ Please select a valid class');
+        return;
+      }
       
       const response = await studentsApi.create({
         firstName: form.firstName,
         lastName: form.lastName,
-        classId: classMap[form.class] || classMap['Class 8'],
+        classId: selectedClass._id,
         gender: form.gender,
         dateOfBirth: form.dob,
         phone: form.phone,
