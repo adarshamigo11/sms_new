@@ -18,7 +18,7 @@ export default function Students() {
   const [viewStudent,  setViewStudent] = useState(null);
   const [editStudent,  setEditStudent] = useState(null);
   const [toast,        setToast]       = useState('');
-  const [form,         setForm]        = useState({ firstName:'', lastName:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'', email:'' });
+  const [form,         setForm]        = useState({ firstName:'', lastName:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'', email:'', username:'', password:'' });
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
@@ -91,7 +91,7 @@ export default function Students() {
         return;
       }
       
-      const response = await studentsApi.create({
+      const studentData = {
         firstName: form.firstName,
         lastName: form.lastName,
         classId: selectedClass._id,
@@ -99,19 +99,35 @@ export default function Students() {
         dateOfBirth: form.dob,
         phone: form.phone,
         bloodGroup: form.blood,
-        email: form.email || undefined
-      });
+      };
+      
+      // Add custom email/username if provided
+      if (form.email) {
+        studentData.email = form.email;
+      }
+      
+      // Add custom password if provided
+      if (form.password) {
+        studentData.password = form.password;
+      }
+      
+      const response = await studentsApi.create(studentData);
       
       // Show credentials to admin
-      const creds = response.tempPassword ? 
-        `✅ Student created! Email: ${response.student.email || form.email}, Password: ${response.tempPassword}` :
-        '✅ Student added successfully!';
-      showToast(creds);
+      const studentEmail = response.student.email || form.email || 'N/A';
+      const studentPassword = response.tempPassword || form.password || 'N/A';
+      
+      showToast(`✅ Student created! Login: ${studentEmail} | Password: ${studentPassword}`);
       
       setAddOpen(false);
-      setForm({ firstName:'', lastName:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'', email:'' });
-      fetchStudents(); // Refresh list
+      setForm({ firstName:'', lastName:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'', email:'', username:'', password:'' });
+      
+      // Refresh the list after a short delay
+      setTimeout(() => {
+        fetchStudents();
+      }, 500);
     } catch (error) {
+      console.error('Error creating student:', error);
       showToast('❌ ' + (error.message || 'Failed to add student'));
     }
   };
@@ -261,6 +277,12 @@ export default function Students() {
           <FormField label="Student Email (optional)">
             <input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} placeholder="student@email.com"/>
           </FormField>
+          <FormField label="Login Username (optional)">
+            <input value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))} placeholder="Custom username for login"/>
+          </FormField>
+          <FormField label="Login Password (optional)">
+            <input type="password" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} placeholder="Custom password (min 6 chars)"/>
+          </FormField>
           <FormField label="Blood Group">
             <select value={form.blood} onChange={e=>setForm(f=>({...f,blood:e.target.value}))}>
               <option value="">Unknown</option>
@@ -275,7 +297,7 @@ export default function Students() {
           </FormField>
         </div>
         <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mt-4">
-          <p className="text-blue-400 text-xs">ℹ️ A student account will be created automatically. Login credentials will be shown after creation.</p>
+          <p className="text-blue-400 text-xs">ℹ️ Leave username/password empty to auto-generate. Credentials will be shown after creation.</p>
         </div>
         <div className="flex gap-3 mt-5 justify-end border-t border-slate-700/40 pt-4">
           <SecondaryBtn onClick={() => setAddOpen(false)}>Cancel</SecondaryBtn>
