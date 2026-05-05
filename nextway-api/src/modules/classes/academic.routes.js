@@ -88,12 +88,14 @@ router.put('/users/:id', protect, roles('school_admin'), asyncHandler(async (req
     }
   });
 
-  const user = await User.findById(req.params.id);
-  if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+  // Find user in the same school
+  const user = await User.findOne({ 
+    _id: req.params.id, 
+    schoolId: req.schoolId 
+  });
   
-  // Check school ownership
-  if (user.schoolId.toString() !== req.schoolId) {
-    return res.status(403).json({ success: false, message: 'Unauthorized' });
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found' });
   }
   
   // Update fields (pre-save hook will hash password if changed)
