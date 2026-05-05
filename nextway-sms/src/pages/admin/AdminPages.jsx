@@ -1003,43 +1003,13 @@ export function Communication() {
     <div className="space-y-5">
       <Toast />
       <PageHeader title="Communication" subtitle={`${notices.length} notices and announcements`} />
-      <div className="grid lg:grid-cols-3 gap-4">
-        {/* Chat list */}
-        <GlassCard noHover padding="p-4">
-          <SectionTitle>Conversations</SectionTitle>
-          <div className="space-y-1">
-            {chats.map((c, i) => (
-              <div key={c.id} onClick={() => setSelectedChat(i)}
-                className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${selectedChat === i ? 'bg-blue-500/15 border border-blue-500/20' : 'hover:bg-slate-800/30'}`}>
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: 'linear-gradient(135deg,#3b82f6,#06b6d4)' }}>{c.name.charAt(0)}</div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-xs font-medium">{c.name}</p>
-                  <p className="text-slate-500 text-[10px] truncate">{c.msgs[c.msgs.length - 1]?.text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
-
-        {/* Chat window */}
-        <GlassCard noHover padding="p-0" className="lg:col-span-2 overflow-hidden flex flex-col" style={{ height: '400px' }}>
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700/40">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>{chats[selectedChat]?.name.charAt(0)}</div>
-            <div><p className="text-white text-sm font-medium">{chats[selectedChat]?.name}</p><p className="text-slate-500 text-[10px]">{chats[selectedChat]?.role}</p></div>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {chats[selectedChat]?.msgs.map((m, i) => (
-              <div key={i} className={`flex ${m.from === 'me' ? 'justify-end' : 'justify-start'}`}>
-                <div className={m.from === 'me' ? 'chat-bubble-user' : 'chat-bubble-ai'}>{m.text}</div>
-              </div>
-            ))}
-          </div>
-          <div className="p-3 border-t border-slate-700/40 flex gap-2">
-            <input value={chatMsg} onChange={e => setChatMsg(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendChat()} placeholder="Type a message..." style={{ flex: 1, paddingTop: '0.5rem', paddingBottom: '0.5rem' }} />
-            <PrimaryBtn onClick={sendChat}>Send</PrimaryBtn>
-          </div>
-        </GlassCard>
-      </div>
+      
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-slate-400">Loading notices...</div>
+        </div>
+      )}
 
       {/* Broadcast */}
       <GlassCard noHover>
@@ -1052,10 +1022,44 @@ export function Communication() {
           </div>
           <div className="space-y-3">
             <FormField label="Message"><textarea rows={4} value={msg} onChange={e => setMsg(e.target.value)} placeholder="Type your announcement..." /></FormField>
-            <PrimaryBtn onClick={() => { if (!title || !msg) return show('⚠️ Please fill title and message'); show(`📢 Announcement "${title}" sent to all!`); setTitle(''); setMsg(''); }}>📢 Send Announcement</PrimaryBtn>
+            <PrimaryBtn onClick={handleCreateNotice}>📢 Send Announcement</PrimaryBtn>
           </div>
         </div>
       </GlassCard>
+
+      {/* Notices List */}
+      {!loading && notices.length > 0 && (
+        <GlassCard noHover>
+          <SectionTitle>Recent Notices</SectionTitle>
+          <div className="space-y-3">
+            {notices.map((notice) => (
+              <div key={notice._id || notice.id} className="p-4 rounded-xl bg-slate-800/30 border border-slate-700/40">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="text-white font-semibold text-sm">{notice.title}</p>
+                    <p className="text-slate-500 text-xs">{new Date(notice.date).toLocaleDateString()}</p>
+                  </div>
+                  <Badge type={notice.priority === 'high' ? 'red' : notice.priority === 'urgent' ? 'red' : 'blue'}>
+                    {notice.priority}
+                  </Badge>
+                </div>
+                <p className="text-slate-400 text-sm">{notice.message || notice.content}</p>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      )}
+
+      {/* Empty State */}
+      {!loading && notices.length === 0 && (
+        <GlassCard noHover>
+          <div className="text-center py-12">
+            <div className="text-5xl mb-3">📢</div>
+            <p className="text-slate-400 text-sm">No notices yet</p>
+            <p className="text-slate-500 text-xs mt-1">Create your first announcement above</p>
+          </div>
+        </GlassCard>
+      )}
     </div>
   );
 }
