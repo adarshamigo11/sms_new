@@ -80,7 +80,9 @@ export default function AppLayout() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  const links = NAV_LINKS[user.role] || NAV_LINKS[role] || [];
+  // Map school_admin to admin for navigation
+  const normalizedRole = user.role === 'school_admin' ? 'admin' : user.role;
+  const links = NAV_LINKS[user.role] || NAV_LINKS[normalizedRole] || [];
   const meta  = ROLE_META[user.role] || ROLE_META.admin;
 
   const handleLogout = () => { logout(); navigate('/login'); };
