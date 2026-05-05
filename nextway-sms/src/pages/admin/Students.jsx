@@ -27,7 +27,27 @@ export default function Students() {
     try {
       setLoading(true);
       const response = await studentsApi.list();
-      setStudents(response.students || []);
+      
+      // Transform API data to match frontend expectations
+      const transformedStudents = (response.students || []).map(student => ({
+        id: student._id,
+        name: `${student.firstName} ${student.lastName}`,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        admissionNo: student.admissionNo,
+        class: student.classId?.name || 'N/A',
+        section: student.sectionId?.name || 'N/A',
+        gender: student.gender,
+        dob: student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A',
+        attendance: student.attendance?.percentage || 0,
+        fees: student.feeStatus || 'pending',
+        status: student.status || 'active',
+        phone: student.phone,
+        blood: student.bloodGroup,
+        email: student.email,
+      }));
+      
+      setStudents(transformedStudents);
     } catch (error) {
       console.error('Error fetching students:', error);
       setStudents([]);
