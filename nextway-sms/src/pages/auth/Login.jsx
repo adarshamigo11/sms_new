@@ -29,6 +29,7 @@ export default function Login() {
   const [loading,  setLoading]   = useState(false);
   const [error,    setError]     = useState('');
 
+  const ROUTE_MAP = { school_admin:'admin', teacher:'teacher', student:'student', parent:'parent' };
 
   const handleRoleSelect = (r) => { setSelected(r.key); setEmail(r.email); setError(''); };
 
