@@ -23,7 +23,7 @@ export function Teachers() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [viewT, setViewT] = useState(null);
-  const [form, setForm] = useState({ name:'', email:'', subject:'Mathematics', phone:'', role:'Teacher' });
+  const [form, setForm] = useState({ name:'', email:'', subject:'Mathematics', phone:'', role:'Teacher', password:'' });
 
   const fetchTeachers = async () => {
     try {
@@ -45,17 +45,23 @@ export function Teachers() {
 
   const handleAddTeacher = async () => {
     try {
-      await usersApi.create({
+      // Use custom password or default
+      const teacherPassword = form.password || 'Teacher@2026!';
+      
+      const response = await usersApi.create({
         name: form.name,
         email: form.email,
-        password: 'Teacher@2026!',
+        password: teacherPassword,
         role: 'teacher',
         subject: form.subject,
         phone: form.phone
       });
-      show('✅ Teacher added successfully!');
+      
+      // Show credentials
+      show(`✅ Teacher added! Email: ${form.email} | Password: ${teacherPassword}`);
+      
       setAddOpen(false);
-      setForm({ name:'', email:'', subject:'Mathematics', phone:'', role:'Teacher' });
+      setForm({ name:'', email:'', subject:'Mathematics', phone:'', role:'Teacher', password:'' });
       fetchTeachers();
     } catch (error) {
       show('❌ ' + (error.message || 'Failed to add teacher'));
@@ -113,9 +119,12 @@ export function Teachers() {
             <FormField label="Role"><select><option>Teacher</option><option>Librarian</option><option>Accountant</option><option>Receptionist</option></select></FormField>
             <FormField label="Subject"><select value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}><option>Mathematics</option><option>Science</option><option>English</option><option>Hindi</option><option>Social Science</option><option>Computer Science</option></select></FormField>
             <FormField label="Phone"><input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="10-digit" /></FormField>
-            <FormField label="Joining Date"><input type="date" defaultValue={new Date().toISOString().split('T')[0]} /></FormField>
+            <FormField label="Password (optional)"><input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Leave empty for default: Teacher@2026!" /></FormField>
           </div>
           <FormField label="Address"><input placeholder="Full address" /></FormField>
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
+            <p className="text-blue-400 text-xs">ℹ️ Leave password empty to use default: Teacher@2026!</p>
+          </div>
           <div className="flex gap-3 justify-end pt-2 border-t border-slate-700/40">
             <SecondaryBtn onClick={() => setAddOpen(false)}>Cancel</SecondaryBtn>
             <PrimaryBtn onClick={handleAddTeacher}>Create Staff Account</PrimaryBtn>
