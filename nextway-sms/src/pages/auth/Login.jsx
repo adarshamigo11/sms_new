@@ -37,10 +37,13 @@ export default function Login() {
     if (!email.trim()) { setError('Please enter your email'); return; }
     setError(''); setLoading(true);
     try {
+      console.log('🔐 Attempting login with:', email);
       const user = await login(email, password);
+      console.log('✅ Login successful:', user);
       const role = ROUTE_MAP[user.role] || 'admin';
       navigate(`/${role}/dashboard`);
     } catch (err) {
+      console.error('❌ Login error:', err);
       setError(err instanceof ApiError ? err.message : 'Login failed. Check your credentials.');
     } finally {
       setLoading(false);
