@@ -23,6 +23,9 @@ export function Teachers() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [viewT, setViewT] = useState(null);
+  const [resetPwdOpen, setResetPwdOpen] = useState(false);
+  const [resetTeacher, setResetTeacher] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
   const [form, setForm] = useState({ name:'', email:'', subject:'Mathematics', phone:'', role:'Teacher', password:'' });
 
   const fetchTeachers = async () => {
@@ -68,6 +71,26 @@ export function Teachers() {
     }
   };
 
+  const handleResetPassword = async () => {
+    try {
+      if (!newPassword || newPassword.length < 6) {
+        show('❌ Password must be at least 6 characters');
+        return;
+      }
+
+      await usersApi.update(resetTeacher._id || resetTeacher.id, {
+        password: newPassword
+      });
+
+      show(`✅ Password reset for ${resetTeacher.name}! New password: ${newPassword}`);
+      setResetPwdOpen(false);
+      setResetTeacher(null);
+      setNewPassword('');
+    } catch (error) {
+      show('❌ ' + (error.message || 'Failed to reset password'));
+    }
+  };
+
   return (
     <div className="space-y-5">
       <Toast />
@@ -103,7 +126,7 @@ export function Teachers() {
               <Badge type="green">Active</Badge>
               <div className="flex gap-1">
                 <button onClick={() => setViewT(t)} className="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 rounded-lg hover:bg-blue-500/10">View</button>
-                <button onClick={() => show(`📧 Reset email sent to ${t.email}`)} className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded-lg hover:bg-slate-700/30">Reset Pwd</button>
+                <button onClick={() => { setResetTeacher(t); setNewPassword(''); setResetPwdOpen(true); }} className="text-orange-400 hover:text-orange-300 text-xs px-2 py-1 rounded-lg hover:bg-orange-500/10">Reset Pwd</button>
               </div>
             </div>
           </div>
@@ -149,6 +172,40 @@ export function Teachers() {
               <PrimaryBtn small onClick={() => show('📊 Attendance report opened')}>View Attendance</PrimaryBtn>
               <PrimaryBtn small onClick={() => show('📋 Timetable opened')}>Timetable</PrimaryBtn>
               <SecondaryBtn small onClick={() => { setViewT(null); show(`⚠️ ${viewT.name} deactivated`); }}>Deactivate</SecondaryBtn>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal open={resetPwdOpen} onClose={() => setResetPwdOpen(false)} title="Reset Password" width="max-w-md">
+        {resetTeacher && (
+          <div className="space-y-4">
+            <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
+              <p className="text-orange-400 text-sm font-medium">Resetting password for:</p>
+              <p className="text-white text-base font-bold mt-1">{resetTeacher.name}</p>
+              <p className="text-slate-400 text-xs">{resetTeacher.email}</p>
+            </div>
+            
+            <FormField label="New Password" required>
+              <input 
+                type="password" 
+                value={newPassword} 
+                onChange={e => setNewPassword(e.target.value)} 
+                placeholder="Enter new password (min 6 characters)"
+                autoFocus
+              />
+            </FormField>
+
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
+              <p className="text-blue-400 text-xs">ℹ️ The teacher will be able to login immediately with this new password.</p>
+            </div>
+
+            <div className="flex gap-3 justify-end pt-2 border-t border-slate-700/40">
+              <SecondaryBtn onClick={() => { setResetPwdOpen(false); setResetTeacher(null); setNewPassword(''); }}>Cancel</SecondaryBtn>
+              <PrimaryBtn onClick={handleResetPassword} disabled={!newPassword || newPassword.length < 6}>
+                🔒 Reset Password
+              </PrimaryBtn>
             </div>
           </div>
         )}
