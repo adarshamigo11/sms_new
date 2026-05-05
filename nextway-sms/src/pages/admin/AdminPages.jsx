@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader, GlassCard, PrimaryBtn, SecondaryBtn, DangerBtn, StatCard, SectionTitle, Badge, Modal, FormField, SearchBar } from '../../components/ui';
 import { TEACHERS, CLASSES, EXAMS, EXAM_RESULTS, HOMEWORK, LEAVE_REQUESTS, BOOKS, TRANSPORT_ROUTES, HOSTEL_ROOMS, INVENTORY, NOTICES, AUDIT_LOGS, STUDENTS } from '../../data/mockData';
 import { downloadCSV, printWindow, makeReceipt, makeReportCard, makeIDCard } from '../../utils/download';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { usersApi, classesApi, homeworkApi, examsApi, leavesApi, noticesApi } from '../../services/api';
 
 // ── Shared Toast ───────────────────────────────────────────────────────────
 function useToast() {
