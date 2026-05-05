@@ -84,23 +84,23 @@ router.put('/users/:id', protect, roles('school_admin'), asyncHandler(async (req
   
   allowed.forEach(k => { 
     if (req.body[k] !== undefined) {
-      // If updating password, hash it
-      if (k === 'password' && req.body[k]) {
-        const bcrypt = require('bcryptjs');
-        updates[k] = await bcrypt.hash(req.body[k], 10);
-      } else {
-        updates[k] = req.body[k];
-      }
+      updates[k] = req.body[k];
     }
   });
 
-  const user = await User.findOneAndUpdate(
-    { _id: req.params.id, schoolId: req.schoolId },
-    updates, { new: true }
-  ).select('-password -refreshTokens');
-
+  const user = await User.findById(req.params.id);
   if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-  res.json({ success: true, user, message: 'User updated successfully' });
+  
+  // Check school ownership
+  if (user.schoolId.toString() !== req.schoolId) {
+    return res.status(403).json({ success: false, message: 'Unauthorized' });
+  }
+  
+  // Update fields (pre-save hook will hash password if changed)
+  Object.assign(user, updates);
+  await user.save();
+
+  res.json({ success: true, user: user.toSafeObject(), message: 'User updated successfully' });
 }));
 
 // ── REPORTS ─────────────────────────────────────────────────────────────────
