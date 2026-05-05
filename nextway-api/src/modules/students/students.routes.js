@@ -69,14 +69,16 @@ router.post('/',
     const admissionNo = generateAdmissionNo('NWA', year, count + 1);
 
     // Create login user for student
-    const tempPassword = `Student@${admissionNo.replace(/\//g,'')}`;
+    const studentEmail = email || `${admissionNo.replace(/\//g,'').toLowerCase()}@student.nextway.edu`;
+    const studentPassword = req.body.password || `Student@${admissionNo.replace(/\//g,'')}`;
+    
     const userDoc = await User.create({
       schoolId: req.schoolId,
       name:     `${firstName} ${lastName}`,
-      email:    email || `${admissionNo.replace(/\//g,'').toLowerCase()}@student.nextway.edu`,
-      password: tempPassword,
+      email:    studentEmail,
+      password: studentPassword,
       role:     'student',
-      mustChangePassword: true,
+      mustChangePassword: req.body.password ? false : true, // Only require change if auto-generated
     });
 
     const student = await Student.create({
@@ -91,7 +93,12 @@ router.post('/',
     });
 
     res.locals.entityId = student._id.toString();
-    res.status(201).json({ success: true, student, tempPassword, message: 'Student created. Share credentials with student/parent.' });
+    res.status(201).json({ 
+      success: true, 
+      student, 
+      tempPassword: studentPassword, 
+      message: 'Student created. Share credentials with student/parent.' 
+    });
   })
 );
 

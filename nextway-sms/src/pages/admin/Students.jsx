@@ -18,7 +18,7 @@ export default function Students() {
   const [viewStudent,  setViewStudent] = useState(null);
   const [editStudent,  setEditStudent] = useState(null);
   const [toast,        setToast]       = useState('');
-  const [form,         setForm]        = useState({ firstName:'', lastName:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'', email:'', username:'', password:'' });
+  const [form,         setForm]        = useState({ firstName:'', lastName:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'', email:'', password:'' });
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
@@ -120,7 +120,7 @@ export default function Students() {
       showToast(`✅ Student created! Login: ${studentEmail} | Password: ${studentPassword}`);
       
       setAddOpen(false);
-      setForm({ firstName:'', lastName:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'', email:'', username:'', password:'' });
+      setForm({ firstName:'', lastName:'', class:'Class 8', section:'A', gender:'Male', dob:'', phone:'', blood:'', email:'', password:'' });
       
       // Refresh the list after a short delay
       setTimeout(() => {
@@ -274,11 +274,8 @@ export default function Students() {
           <FormField label="Parent Phone" required>
             <input type="tel" value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} placeholder="10-digit number"/>
           </FormField>
-          <FormField label="Student Email (optional)">
-            <input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} placeholder="student@email.com"/>
-          </FormField>
-          <FormField label="Login Username (optional)">
-            <input value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))} placeholder="Custom username for login"/>
+          <FormField label="Student Email / Login ID (optional)">
+            <input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} placeholder="student@email.com or custom login ID"/>
           </FormField>
           <FormField label="Login Password (optional)">
             <input type="password" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} placeholder="Custom password (min 6 chars)"/>
