@@ -26,7 +26,8 @@ export default function Students() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const response = await studentsApi.list();
+      // Fetch all students by setting a high limit
+      const response = await studentsApi.list({ limit: 1000 });
       
       // Transform API data to match frontend expectations
       const transformedStudents = (response.students || []).map(student => ({
@@ -48,6 +49,9 @@ export default function Students() {
       }));
       
       setStudents(transformedStudents);
+      
+      // Store total count from API (in case we implement pagination later)
+      console.log(`Loaded ${transformedStudents.length} students, total in DB: ${response.total}`);
     } catch (error) {
       console.error('Error fetching students:', error);
       setStudents([]);
