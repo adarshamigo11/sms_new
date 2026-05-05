@@ -79,9 +79,20 @@ router.post('/users', protect, roles('school_admin'),
 );
 
 router.put('/users/:id', protect, roles('school_admin'), asyncHandler(async (req, res) => {
-  const allowed = ['name','phone','role','isActive'];
+  const allowed = ['name','phone','role','isActive','password'];
   const updates = {};
-  allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
+  
+  allowed.forEach(k => { 
+    if (req.body[k] !== undefined) {
+      // If updating password, hash it
+      if (k === 'password' && req.body[k]) {
+        const bcrypt = require('bcryptjs');
+        updates[k] = await bcrypt.hash(req.body[k], 10);
+      } else {
+        updates[k] = req.body[k];
+      }
+    }
+  });
 
   const user = await User.findOneAndUpdate(
     { _id: req.params.id, schoolId: req.schoolId },
@@ -89,7 +100,7 @@ router.put('/users/:id', protect, roles('school_admin'), asyncHandler(async (req
   ).select('-password -refreshTokens');
 
   if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-  res.json({ success: true, user });
+  res.json({ success: true, user, message: 'User updated successfully' });
 }));
 
 // ── REPORTS ─────────────────────────────────────────────────────────────────
